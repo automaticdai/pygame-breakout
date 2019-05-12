@@ -1,5 +1,5 @@
 import pygame
-
+import sys
 
 class Pad:
     x = 0
@@ -36,21 +36,33 @@ class Game:
 
 if __name__ == "__main__":
     pygame.init()
-    gameDisplay = pygame.display.set_mode((800, 600))
+    gameDisplay = pygame.display.set_mode((600, 800))
     pygame.display.set_caption('Pygame: Breakout')
 
     clock = pygame.time.Clock()
 
     crashed = False
-
     while not crashed:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 crashed = True
+
             print(event)
 
+            keys = pygame.key.get_pressed()
+
+            if keys[pygame.K_LEFT]:
+                pass
+            elif keys[pygame.K_RIGHT]:
+                pass
+            elif keys[pygame.K_UP]:
+                pass
+
+        pygame.draw.rect(gameDisplay, (255, 0, 0), (0, 0, 100, 100))
         pygame.display.update()
         clock.tick(60)
 
+        #if event.type == QUIT:
+
     pygame.quit()
-    quit()
+    sys.exit()
