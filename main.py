@@ -2,6 +2,8 @@ import pygame
 import sys
 from enum import Enum
 
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 1000
 
 # -----------------------------
 # CLASSES
@@ -13,27 +15,41 @@ class Actions(Enum):
 
 
 class Ship:
-    x = 800 / 2
-    y = 900
+    x = SCREEN_WIDTH / 2
+    y = SCREEN_HEIGHT - 100
     vx = 10
-    width = 50
-    height = 25
+    width = 60
+    height = 32
+    fireLock = 0
+    pic = pygame.image.load("./assets/images/ship.png")
 
     def __init__(self):
         pass
 
     def draw(self, display):
-        pygame.draw.rect(display, (255, 0, 0), (self.x - self.width / 2, self.y - self.height / 2, self.width, self.height))
+        pos = (self.x - self.width / 2, self.y - self.height / 2, self.width, self.height)
+        # pygame.draw.rect(display, (255, 0, 0), pos)
+        display.blit(self.pic, pos)
+
+    def is_open_fire(self):
+        if self.fireLock == 0:
+            return True
+        else:
+            return False
 
 
 class Enemy:
     x = 0
     y = 0
-    width = 50
-    height = 25
-    vx = -20
-    vy = 50
-    moveCnt = 100
+    width = 48
+    height = 32
+    vx = 20
+    vy = 80
+    score = 30
+    moveCnt = 50
+    isHitWall = False
+    isMoveY = False
+    pic = pygame.image.load("./assets/images/InvaderA1.png")
 
     def __init__(self):
         pass
@@ -45,23 +61,40 @@ class Enemy:
 
     def update(self):
         if self.moveCnt == 0:
-            self.moveCnt = 100
-            self.x = self.x + self.vx
+            self.moveCnt = 50
+
             # if hit wall
-            # self.vx = 0 - self.vx;
-            # self.y = self.y + self.vy
+            if (self.vx > 0 and self.x > SCREEN_WIDTH - self.width / 2) or (self.vx < 0 and self.x < 0 + self.width):
+                self.isHitWall = True
+
+            self.x = self.x + self.vx
+
         self.moveCnt = self.moveCnt - 1
 
+    def move_y(self):
+        self.vx = 0 - self.vx
+        self.y = self.y + self.vy
+        self.isHitWall = False
+
     def draw(self, display):
-        pygame.draw.rect(display, (255, 0, 0), (self.x - self.width / 2, self.y - self.height / 2, self.width, self.height))
+        pos = (self.x - self.width / 2, self.y - self.height / 2, self.width, self.height)
+        # pygame.draw.rect(display, (0, 255, 0), pos)
+        display.blit(self.pic, pos)
+
+    def is_hit(self, x, y):
+        if (x >= self.x - self.width / 2) and (x <= self.x + self.width / 2) and (y >= self.y - self.width / 2) and (y <= self.y + self.width / 2):
+            return True
+        else:
+            return False
 
 
 class Bullet:
     x = 0
     y = 0
     vy = 0
-    width = 5
-    height = 10
+    width = 6
+    height = 17
+    pic = pygame.image.load("./assets/images/bullet.png")
 
     def __init__(self):
         pass
@@ -75,8 +108,15 @@ class Bullet:
         self.y = self.y + self.vy
 
     def draw(self, display):
-        pygame.draw.rect(display, (255, 0, 0), (self.x - self.width / 2, self.y - self.height / 2, self.width, self.height))
+        pos = (self.x - self.width / 2, self.y - self.height / 2, self.width, self.height)
+        # pygame.draw.rect(display, (200, 200, 200), pos)
+        display.blit(self.pic, pos)
 
+    def is_out_of_screen(self):
+        if self.y < 0 or self.y > 1000:
+            return True
+        else:
+            return False
 
 # -----------------------------
 # GLOBAL VARIABLES
@@ -86,8 +126,11 @@ ship = Ship()
 enemies = []
 bullets = []
 
-enemy = Enemy(500, 300, 30)
-enemies.append(enemy)
+
+for i in range(5):
+    for j in range(3):
+        enemy = Enemy(100 * i + 100, 80 * j + 300, 30)
+        enemies.append(enemy)
 
 if __name__ == "__main__":
     # -----------------------------
@@ -104,7 +147,7 @@ if __name__ == "__main__":
 
     # -----------------------------
     # show display
-    gameDisplay = pygame.display.set_mode((800, 1000))
+    gameDisplay = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption('Space Invader')
 
     clock = pygame.time.Clock()
@@ -140,27 +183,44 @@ if __name__ == "__main__":
         elif action == Actions.RIGHT:
             ship.x = ship.x + ship.vx
         elif action == Actions.FIRE:
-            soundFire.play()
-            bullet = Bullet(ship.x, ship.y, -10)
-            bullets.append(bullet)
-            pass
+            if ship.is_open_fire():
+                soundFire.play()
+                bullet = Bullet(ship.x, ship.y, -10)
+                bullets.append(bullet)
+                ship.fireLock = 50
+
+        if ship.fireLock != 0:
+            ship.fireLock = ship.fireLock - 1
 
         # update all bullets
         for i in bullets:
             i.update()
             # hit any enemy?
-                # destroy bullet
-                # soundDestroyed.play()
+            for j in enemies:
+                if j.is_hit(i.x, i.y):
+                    # destroy enemy
+                    score = score + j.score
+                    enemies.remove(j)
+                    soundDestroyed.play()
+
+
+                    # destroy bullet
+                    bullets.remove(i)
+
             # out of screen?
+            if i.is_out_of_screen():
                 # destroy bullet
-            pass
+                bullets.remove(i)
+                print(bullets)
 
         # update all enemies
         for i in enemies:
             i.update()
 
-        # handle scores
-        score = score + 1
+        for i in enemies:
+            if i.isHitWall:
+                for j in enemies:
+                    j.move_y()
 
         # win? lose?
 
