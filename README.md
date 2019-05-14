@@ -6,6 +6,13 @@ My (simple) implementation of the game Space Invader for a student tutorial. Thi
 
 
 
+## Project Organisation
+
+- main.py: the main game code
+- pygame_text.py: use to test if Pygame is working
+
+
+
 ## Requirements
 
 - Python 3
